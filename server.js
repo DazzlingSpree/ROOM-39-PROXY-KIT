@@ -4,28 +4,24 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 
 const app = express();
 
-// --- FIX: DYNAMIC CORS POLICY ---
-// Instead of '*', we dynamically reflect the requesting origin.
-// This allows 'credentials: true' to work without breaking browser security.
+// --- UNIVERSAL CORS POLICY ---
+// 1. origin: true -> Automatically reflects the requesting domain (allows everyone).
+// 2. credentials: true -> Allows cookies/auth headers to pass through.
+// 3. allowedHeaders omitted -> Automatically accepts whatever headers the browser sends.
 app.use(cors({
-    origin: (origin, callback) => {
-        // Allow requests with no origin (like mobile apps, curl, or same-server)
-        if (!origin) return callback(null, true);
-        // Allow all other origins (Reflect them)
-        callback(null, true);
-    },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-    credentials: true // Required for Firebase Auth headers to pass through
+    origin: true, 
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH']
 }));
 
-// 1. ROOT ROUTE (For browser check)
+// 1. ROOT ROUTE (Browser Check)
 app.get('/', (req, res) => {
     res.send('<h1>ROOM-39 RELAY IS ACTIVE</h1><p>Status: Online & Ready</p>');
 });
 
-// 2. HEALTH CHECK (For App Profile check)
+// 2. HEALTH CHECK (App Connection Check)
 app.get('/health', (req, res) => {
+    // Send a 200 OK immediately
     res.status(200).send('ROOM-39 RELAY: ONLINE');
 });
 
@@ -40,9 +36,10 @@ app.use('/tunnel', (req, res, next) => {
     const proxy = createProxyMiddleware({
         target: targetUrl,
         changeOrigin: true,
-        pathRewrite: (path, req) => '', 
-        secure: false,
+        pathRewrite: (path, req) => '',
+        secure: false, // Ignore SSL issues on target if necessary
         onProxyReq: (proxyReq, req, res) => {
+            // Forward body for POST/PUT requests
             if (req.body) {
                 const bodyData = JSON.stringify(req.body);
                 proxyReq.setHeader('Content-Type', 'application/json');
@@ -52,13 +49,17 @@ app.use('/tunnel', (req, res, next) => {
         },
         onError: (err, req, res) => {
             console.error('Proxy Error:', err);
-            res.status(500).send('Proxy Error');
+            // Send a safe error so the client knows it failed
+            if (!res.headersSent) {
+                res.status(500).send('Proxy Connection Error');
+            }
         }
     });
 
     proxy(req, res, next);
 });
 
+// 4. START SERVER
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
     console.log(`ROOM-39 RELAY ACTIVE on port ${PORT}`);
