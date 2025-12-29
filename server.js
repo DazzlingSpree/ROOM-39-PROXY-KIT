@@ -4,20 +4,27 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 
 const app = express();
 
-// 1. GLOBAL CORS POLICY
+// --- FIX: DYNAMIC CORS POLICY ---
+// Instead of '*', we dynamically reflect the requesting origin.
+// This allows 'credentials: true' to work without breaking browser security.
 app.use(cors({
-    origin: '*', 
+    origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps, curl, or same-server)
+        if (!origin) return callback(null, true);
+        // Allow all other origins (Reflect them)
+        callback(null, true);
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
-    credentials: true
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+    credentials: true // Required for Firebase Auth headers to pass through
 }));
 
-// --- NEW: ROOT ROUTE (Fixes "Cannot GET /") ---
+// 1. ROOT ROUTE (For browser check)
 app.get('/', (req, res) => {
-    res.send('<h1>ROOM-39 RELAY IS ACTIVE</h1><p>Status: Online</p>');
+    res.send('<h1>ROOM-39 RELAY IS ACTIVE</h1><p>Status: Online & Ready</p>');
 });
 
-// 2. HEALTH CHECK
+// 2. HEALTH CHECK (For App Profile check)
 app.get('/health', (req, res) => {
     res.status(200).send('ROOM-39 RELAY: ONLINE');
 });
@@ -33,7 +40,7 @@ app.use('/tunnel', (req, res, next) => {
     const proxy = createProxyMiddleware({
         target: targetUrl,
         changeOrigin: true,
-        pathRewrite: (path, req) => '',
+        pathRewrite: (path, req) => '', 
         secure: false,
         onProxyReq: (proxyReq, req, res) => {
             if (req.body) {
@@ -52,7 +59,6 @@ app.use('/tunnel', (req, res, next) => {
     proxy(req, res, next);
 });
 
-// 4. START SERVER
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
     console.log(`ROOM-39 RELAY ACTIVE on port ${PORT}`);
