@@ -1,10 +1,11 @@
 services:
   - type: web
-    name: room39-proxy
+    name: ghost-proxy-node
     env: node
     plan: free
     buildCommand: npm install
     startCommand: node server.js
     envVars:
-      - key: PORT
-        value: 10000
+      - key: NODE_VERSION
+        value: 18.17.0
+    autoDeploy: true
