@@ -3,44 +3,55 @@ const cors = require('cors');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
 const app = express();
+const PORT = process.env.PORT || 3000;
 
-// --- UNIVERSAL CORS POLICY ---
-// 1. origin: true -> Automatically reflects the requesting domain (allows everyone).
-// 2. credentials: true -> Allows cookies/auth headers to pass through.
-// 3. allowedHeaders omitted -> Automatically accepts whatever headers the browser sends.
+// --- SECURITY & CORS ---
+// Allow requests from any origin (or restrict to your App's domain in production)
 app.use(cors({
     origin: true, 
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH']
 }));
 
-// 1. ROOT ROUTE (Browser Check)
+// Parse JSON bodies (needed if you want to log or inspect bodies before proxying)
+app.use(express.json());
+
+// --- ROUTES ---
+
+// 1. Root Route (Status Check)
 app.get('/', (req, res) => {
-    res.send('<h1>ROOM-39 RELAY IS ACTIVE</h1><p>Status: Online & Ready</p>');
+    res.send(`
+        <div style="font-family: monospace; background: #111; color: #0f0; padding: 20px; height: 100vh;">
+            <h1>GHOST PROXY NODE: ACTIVE</h1>
+            <p>Status: Online</p>
+            <p>Region: ${process.env.RENDER_REGION || 'Unknown'}</p>
+        </div>
+    `);
 });
 
-// 2. HEALTH CHECK (App Connection Check)
+// 2. Health Check (for Uptime Monitors)
 app.get('/health', (req, res) => {
-    // Send a 200 OK immediately
-    res.status(200).send('ROOM-39 RELAY: ONLINE');
+    res.status(200).send('OK');
 });
 
-// 3. TUNNELING LOGIC
+// 3. The Proxy Tunnel
+// Usage: /tunnel?target=https://blocked-site.com/api/v1/resource
 app.use('/tunnel', (req, res, next) => {
     const targetUrl = req.query.target;
 
     if (!targetUrl) {
-        return res.status(400).send('Error: Missing target URL parameter.');
+        return res.status(400).json({ error: 'Missing "target" query parameter.' });
     }
 
+    // Dynamic Proxy Configuration
     const proxy = createProxyMiddleware({
         target: targetUrl,
         changeOrigin: true,
-        pathRewrite: (path, req) => '',
-        secure: false, // Ignore SSL issues on target if necessary
+        pathRewrite: (path, req) => '', // Strips '/tunnel' from the forwarded path
+        secure: false, // Set to true in strictly secure environments; false helps with self-signed certs
         onProxyReq: (proxyReq, req, res) => {
-            // Forward body for POST/PUT requests
-            if (req.body) {
+            // If the client sent a body, we need to restream it because body-parser consumed it
+            if (req.body && Object.keys(req.body).length > 0) {
                 const bodyData = JSON.stringify(req.body);
                 proxyReq.setHeader('Content-Type', 'application/json');
                 proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
@@ -49,18 +60,14 @@ app.use('/tunnel', (req, res, next) => {
         },
         onError: (err, req, res) => {
             console.error('Proxy Error:', err);
-            // Send a safe error so the client knows it failed
-            if (!res.headersSent) {
-                res.status(500).send('Proxy Connection Error');
-            }
+            res.status(500).send('Proxy Connection Failed');
         }
     });
 
     proxy(req, res, next);
 });
 
-// 4. START SERVER
-const PORT = process.env.PORT || 8080;
+// --- START SERVER ---
 app.listen(PORT, () => {
-    console.log(`ROOM-39 RELAY ACTIVE on port ${PORT}`);
+    console.log(`Ghost Proxy listening on port ${PORT}`);
 });
