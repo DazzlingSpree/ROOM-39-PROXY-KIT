@@ -29,3 +29,11 @@ Once deployed, copy your service URL (e.g., `https://ghost-proxy-node.onrender.c
 2. Go to **Profile** -> **Network Uplinks**.
 3. Unlock the **Ghost Protocol** (Subscribers only).
 4. Enter your Proxy URL in the **Custom Relay** field:
+https://your-app-name.onrender.com/tunnel?target=
+
+5. Click **LINK**.
+
+## API Endpoints
+
+- **`GET /`**: Server Status Check.
+- **`GET /tunnel?target=<URL>`**: Proxies the request to the specified `<URL>`.
