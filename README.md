@@ -36,4 +36,4 @@ https://your-app-name.onrender.com/tunnel?target=
 ## API Endpoints
 
 - **`GET /`**: Server Status Check.
-- **`GET /tunnel?target=<URL>`**: Proxies the request to the specified `<URL>`.
+- **`GET /?target=<URL>`**: Proxies the request to the specified `<URL>`.
