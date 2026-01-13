@@ -29,7 +29,7 @@ Once deployed, copy your service URL (e.g., `https://room-39-proxy-kit.onrender.
 2. Go to **Profile** -> **Network Uplinks**.
 3. Unlock the **Ghost Protocol** (Subscribers only).
 4. Enter your Proxy URL in the **Custom Relay** field:
-https://your-app-name.onrender.com/tunnel?target=
+https://your-app-name.onrender.com/?target=
 
 5. Click **LINK**.
 
