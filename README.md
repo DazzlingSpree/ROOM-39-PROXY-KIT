@@ -23,7 +23,7 @@ A lightweight, secure relay server designed for the Ghost Protocol application. 
 
 ## Usage in Ghost App
 
-Once deployed, copy your service URL (e.g., `https://ghost-proxy-node.onrender.com`).
+Once deployed, copy your service URL (e.g., `https://room-39-proxy-kit.onrender.com`).
 
 1. Log in to the Ghost App.
 2. Go to **Profile** -> **Network Uplinks**.
