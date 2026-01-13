@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: ghost-proxy-node
+    name: room-39-proxy-kit
     env: node
     plan: free
     buildCommand: npm install
